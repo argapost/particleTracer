@@ -10,7 +10,8 @@ subroutine load_velocity(u, v, w, nx, ny, nz, timestep, time)
   real(4) :: v(1:nx, 1:ny, 1:nz)
   real(4) :: w(1:nx, 1:ny, 1:nz)
 
-  character(100) :: int2char, data_dir="test", case_fn="test"
+  character(100) :: int2char, case_fn="re9502pipi."
+  character(100) :: data_dir="/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
   integer :: varid(4), ncid, countv(3)
 

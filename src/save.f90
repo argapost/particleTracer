@@ -30,11 +30,12 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
   integer :: varid_i(23), varid_o(30), startv_o(2), countv_o(2), countv_i(3), dimid(2)
   integer :: ncid, ncid_save
 
-  character(100) :: int2char, data_dir="test", case_fn="test"
+  character(100) :: int2char, case_fn="re9502pipi."
+  character(100) :: data_dir="/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   ! Load from NetCDF
 
   write (int2char, '(I5.5)') timestep
-  call io_check(nf90_open(path=trim(data_dir)//'u_du_ddu_eps_p_uni/'//trim(case_fn)//trim(int2char)//'.u_du_ddu_eps_p.nc', &
+  call io_check(nf90_open(path=trim(data_dir)//'u_du_ddu_eps_p/'//trim(case_fn)//trim(int2char)//'.u_du_ddu_eps_p.nc', &
                  mode=nf90_nowrite,ncid=ncid))
 
   
@@ -150,7 +151,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
 
   ! Save to NetCDF
   if (itsave == 1) then
-    call io_check(nf90_create(path=trim(data_dir)//'khmh/'//trim(case_fn)//'khmh_fluct_avg.nc',&
+    call io_check(nf90_create(path=trim(data_dir)//'particles/'//trim(case_fn)//'plane.nc',&
         cmode=or(nf90_clobber,nf90_netcdf4),ncid=ncid_save))
 
     call io_check(nf90_def_dim(ncid_save,'particles', nprtcls, dimid(1)))

@@ -47,6 +47,8 @@ program particleTracer
   integer :: nb_periodes     
   real ::  temps_elapsed  
 
+  character(100) :: case_fn="re9502pipi."
+  character(100) :: data_dir="/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   !=================================================================
   !                        Initialisations.
   !=================================================================
@@ -89,8 +91,10 @@ program particleTracer
 
   ! Load y - grid
   print *, "Read y-grid"
-  call io_check(nf90_open(path='grid_y.nc', &
-                 mode=nf90_nowrite,ncid=ncid))
+  ! call io_check(nf90_open(path='grid_y.nc', &
+  !                mode=nf90_nowrite,ncid=ncid))
+  call io_check(nf90_open(path=trim(data_dir)//'u_du_ddu_eps_p/'//trim(case_fn)//'00000.u_du_ddu_eps_p.nc', &
+                  mode=nf90_nowrite,ncid=ncid))
 
   call io_check(nf90_inq_varid(ncid,'grid_y',varid(1)))
   call io_check(nf90_get_var(ncid,varid(1),grid_y,count=(/ny/)))
