@@ -12,7 +12,7 @@ program particleTracer
   integer, parameter :: ny=385
   integer, parameter :: nz=512
 
-  integer, parameter :: nt=3100
+  integer, parameter :: nt=1000
   integer,parameter :: istep=1, istart=0
   integer :: it, itsave, timestep, save_every=20
   integer :: nt_saved, ncid_save
@@ -23,7 +23,7 @@ program particleTracer
   integer, parameter :: nprtcls=10000
 
   real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
-  real(4) :: pxs(nprtcls), pys(nprtcls), pzs(nprtcls)
+  real(4) :: pxs(nprtcls), pzs(nprtcls)
   real(4) :: pxp, pyp, pzp
   real(4) :: pu(nprtcls), pv(nprtcls), pw(nprtcls)
   real(4) :: pup, pvp, pwp
@@ -82,7 +82,16 @@ program particleTracer
 
   nt_saved = ceiling(real(nt / save_every))
 
-  ncid_save = 0
+  ncid_save = 111
+
+  !-------------------------------------------------------
+  !       initialization of fields
+  !-------------------------------------------------------
+  u = 0.; v = 0.; w = 0.
+  pxs = 0.; pzs = 0.
+  pxp = 0.; pyp = 0.; pzp = 0.
+  px = 0.; py = 0.; pz = 0.
+  pu = 0.; pv = 0.; pw = 0.
 
   CALL CPU_TIME(t1)
   CALL SYSTEM_CLOCK(COUNT_RATE=nb_periodes_sec, &
@@ -105,9 +114,13 @@ program particleTracer
   !-------------------------------------------------------
  
   ! initialize particle position
+  print *, "Initialse position"
   call p_initialize(1, 100, 100, Lx, Ly, Lz, px, py, pz, nprtcls)
+  pxs = px
+  pzs = pz
 
   ! Load first time step
+  print *, "Initialse velocity"
   call load_velocity(u, v, w, nx, ny, nz, timestep, time)
   time_prev = time
 
@@ -126,7 +139,8 @@ program particleTracer
 !$OMP END PARALLEL
 
   ! Save initial position and interpolated fields
-  call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, pxs, pys, pzs, pu, pv, pw, nprtcls, nt_saved, itsave, timestep, time, ncid_save)
+  print *, "Save first timestep"
+  call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, pxs, py, pzs, pu, pv, pw, nprtcls, nt_saved, itsave, timestep, time, ncid_save)
 
   do it=1,nt-1
 
@@ -170,7 +184,6 @@ program particleTracer
 
       ! Location of particles that can go outside of the box
       pxs(ip) = pxs(ip) + dt * (pu(ip) + pup) / 2
-      ! pys(ip) = pys(ip) + dt * (pv(ip) + pvp) / 2
       pzs(ip) = pzs(ip) + dt * (pw(ip) + pwp) / 2
 
       ! If particle position outside of the box reset inside the box

@@ -71,4 +71,32 @@ module interpolate_mod
          +field(ip(1,1), ip(2,1), ip(3,1)) * vol(1,1,1))
 
   end function interpolate
+
+  function interpolate1d(field, grid_y, ny, Ly, locy) result(res)
+    integer, intent(in) :: ny
+    real(4), intent(in) :: field(0:ny-1), grid_y(0:ny-1)
+    real(4), intent(in) :: locy
+    real, intent(in) :: Ly
+
+    real(4) :: res
+    
+    real :: pi
+    real :: xp(0:2), vol(0:1)
+    integer :: ip(0:1)
+
+    pi = acos(-1.)
+
+    ip(0) = maxloc(grid_y, dim=1, mask=(grid_y .le. locy)) - 1 ! find lower bound index
+    ip(1) = ip(0) + 1 ! find upper bound index
+    xp(0) = 0. ! set lower bound to 0
+    xp(1) = 1. ! set upper bound to 1
+    ip(1) = mod(ip(1), ny)
+    xp(2) = (locy - grid_y(ip(0))) / (grid_y(ip(1)) - grid_y(ip(0))) ! percentage of locy from 0-1
+
+    vol(0) = (xp(1)-xp(2))
+    vol(1) = (xp(2)-xp(0))
+
+    res = (field(ip(0)) * vol(0) + field(ip(1)) * vol(1))
+
+  end function interpolate1d
 end module
