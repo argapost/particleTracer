@@ -1,4 +1,6 @@
-subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcls, nt_saved, itsave, timestep, time, ncid_save)
+subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
+                  px, py, pz, pu, pv, pw, dUdy, duvdy, dvvdy,& 
+                  nprtcls, nt_saved, itsave, timestep, time, ncid_save)
   use netcdf
   use :: interpolate_mod
 
@@ -10,24 +12,26 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
   real(4) :: time
 
   real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
-  real(4) :: pu(nprtcls), pv(nprtcls), pw(nprtcls), pp(nprtcls), peps(nprtcls)
+  real(4) :: pufl(nprtcls), pu(nprtcls), pv(nprtcls), pw(nprtcls), pp(nprtcls), peps(nprtcls)
   real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls), pdpdx(nprtcls)
   real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls), pdpdy(nprtcls)
   real(4) :: pdudz(nprtcls), pdvdz(nprtcls), pdwdz(nprtcls), pdpdz(nprtcls)
   real(4) :: pdudxdx(nprtcls), pdvdxdx(nprtcls), pdwdxdx(nprtcls)
   real(4) :: pdudydy(nprtcls), pdvdydy(nprtcls), pdwdydy(nprtcls)
   real(4) :: pdudzdz(nprtcls), pdvdzdz(nprtcls), pdwdzdz(nprtcls)
+  real(4) :: pdUdy(nprtcls), pduvdy(nprtcls), pdvvdy(nprtcls)
 
   ! 3D arrays
-  real(4) :: eps(nx, ny, nz), p(nx, ny, nz)
+  real(4) :: eps(nx, ny, nz), p(nx, ny, nz), ufl(nx, ny, nz)
   real(4) :: dudx(nx, ny, nz), dvdx(nx, ny, nz), dwdx(nx, ny, nz), dpdx(nx, ny, nz)
   real(4) :: dudy(nx, ny, nz), dvdy(nx, ny, nz), dwdy(nx, ny, nz), dpdy(nx, ny, nz)
   real(4) :: dudz(nx, ny, nz), dvdz(nx, ny, nz), dwdz(nx, ny, nz), dpdz(nx, ny, nz)
   real(4) :: dudxdx(nx, ny, nz), dvdxdx(nx, ny, nz), dwdxdx(nx, ny, nz)
   real(4) :: dudydy(nx, ny, nz), dvdydy(nx, ny, nz), dwdydy(nx, ny, nz)
   real(4) :: dudzdz(nx, ny, nz), dvdzdz(nx, ny, nz), dwdzdz(nx, ny, nz)
+  real(4) :: dUdy(ny), duvdy(ny), dvvdy(ny)
 
-  integer :: varid_i(23), varid_o(30), startv_o(2), countv_o(2), countv_i(3), dimid(2)
+  integer :: varid_i(24), varid_o(34), startv_o(2), countv_o(2), countv_i(3), dimid(2)
   integer :: ncid, ncid_save
 
   character(100) :: int2char, case_fn="re9502pipi."
@@ -70,6 +74,8 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
   call io_check(nf90_inq_varid(ncid,'dwdydy',varid_i(22)))
   call io_check(nf90_inq_varid(ncid,'dwdzdz',varid_i(23)))
 
+  call io_check(nf90_inq_varid(ncid,'u',varid_i(24)))
+
   
   countv_i(1)=nx
   countv_i(2)=ny
@@ -106,6 +112,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
   call io_check(nf90_get_var(ncid,varid_i(22), dwdydy, count=countv_i))
   call io_check(nf90_get_var(ncid,varid_i(23), dwdzdz, count=countv_i))
 
+  call io_check(nf90_get_var(ncid,varid_i(24), ufl, count=countv_i))
 
   call io_check(nf90_close(ncid))
 
@@ -113,6 +120,8 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
 !$OMP DO SCHEDULE(RUNTIME)
   ! Interpolate fields at particle position
   do ip=1,nprtcls
+
+    pufl(ip) = interpolate(ufl, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
 
     pdudx(ip) = interpolate(dudx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
     pdudy(ip) = interpolate(dudy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
@@ -144,6 +153,10 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
     pdwdxdx(ip) = interpolate(dwdxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
     pdwdydy(ip) = interpolate(dwdydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
     pdwdzdz(ip) = interpolate(dwdzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+
+    pdUdy(ip) = interpolate1d(dUdy, grid_y, ny, Ly, py(ip))
+    pduvdy(ip) = interpolate1d(duvdy, grid_y, ny, Ly, py(ip))
+    pdvvdy(ip) = interpolate1d(dvvdy, grid_y, ny, Ly, py(ip))
 
   enddo
 !$OMP END DO
@@ -196,7 +209,13 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
     call io_check(nf90_def_var(ncid_save,'pdpdy', nf90_float, dimid, varid_o(28)))
     call io_check(nf90_def_var(ncid_save,'pdpdz', nf90_float, dimid, varid_o(29)))
 
-    call io_check(nf90_def_var(ncid_save,'time', nf90_float, dimid(2), varid_o(30)))
+    call io_check(nf90_def_var(ncid_save,'pdUdy', nf90_float, dimid, varid_o(30)))
+    call io_check(nf90_def_var(ncid_save,'pduvdy', nf90_float, dimid, varid_o(31)))
+    call io_check(nf90_def_var(ncid_save,'pdvvdy', nf90_float, dimid, varid_o(32)))
+
+    call io_check(nf90_def_var(ncid_save,'pufl', nf90_float, dimid, varid_o(33)))
+
+    call io_check(nf90_def_var(ncid_save,'time', nf90_float, dimid(2), varid_o(34)))
 
     call io_check(nf90_enddef(ncid_save))
   endif
@@ -246,7 +265,13 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, px, py, pz, pu, pv, pw, nprtcl
   call io_check(nf90_put_var(ncid_save, varid_o(28), pdpdy, startv_o, countv_o))
   call io_check(nf90_put_var(ncid_save, varid_o(29), pdpdz, startv_o, countv_o))
 
-  call io_check(nf90_put_var(ncid_save, varid_o(30), time, (/startv_o(2)/) ))
+  call io_check(nf90_put_var(ncid_save, varid_o(30), pdUdy, startv_o, countv_o))
+  call io_check(nf90_put_var(ncid_save, varid_o(31), pduvdy, startv_o, countv_o))
+  call io_check(nf90_put_var(ncid_save, varid_o(32), pdvvdy, startv_o, countv_o))
+
+  call io_check(nf90_put_var(ncid_save, varid_o(33), pufl, startv_o, countv_o))
+
+  call io_check(nf90_put_var(ncid_save, varid_o(34), time, (/startv_o(2)/) ))
 
   ! if (itsave == nt_saved) then
   !   call io_check(nf90_close(ncid_save))

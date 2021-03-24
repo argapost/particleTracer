@@ -35,7 +35,8 @@ program particleTracer
   real(4) :: w(1:nx, 1:ny, 1:nz)
 
   real(4) :: grid_y(ny)
-  integer :: ncid, varid(1)
+  real(4) :: dUdy(ny), duvdy(ny), dvvdy(ny)
+  integer :: ncid, varid(3)
 
   integer ::  ip, nb_procs, OMP_GET_NUM_THREADS
 
@@ -100,13 +101,24 @@ program particleTracer
 
   ! Load y - grid
   print *, "Read y-grid"
-  ! call io_check(nf90_open(path='grid_y.nc', &
-  !                mode=nf90_nowrite,ncid=ncid))
   call io_check(nf90_open(path=trim(data_dir)//'u_du_ddu_eps_p/'//trim(case_fn)//'00000.u_du_ddu_eps_p.nc', &
                   mode=nf90_nowrite,ncid=ncid))
 
   call io_check(nf90_inq_varid(ncid,'grid_y',varid(1)))
   call io_check(nf90_get_var(ncid,varid(1),grid_y,count=(/ny/)))
+  call io_check(nf90_close(ncid))
+
+  ! Load dUdy, duvdy, dvvdy
+  print *, "Read dUdy"
+  call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//'statistics_fy.nc', &
+                  mode=nf90_nowrite,ncid=ncid))
+
+  call io_check(nf90_inq_varid(ncid,'dUdy',varid(1)))
+  call io_check(nf90_inq_varid(ncid,'duvdy',varid(2)))
+  call io_check(nf90_inq_varid(ncid,'dvvdy',varid(3)))
+  call io_check(nf90_get_var(ncid,varid(1),dUdy,count=(/ny/)))
+  call io_check(nf90_get_var(ncid,varid(2),duvdy,count=(/ny/)))
+  call io_check(nf90_get_var(ncid,varid(3),dvvdy,count=(/ny/)))
   call io_check(nf90_close(ncid))
 
   !-------------------------------------------------------
@@ -140,7 +152,9 @@ program particleTracer
 
   ! Save initial position and interpolated fields
   print *, "Save first timestep"
-  call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, pxs, py, pzs, pu, pv, pw, nprtcls, nt_saved, itsave, timestep, time, ncid_save)
+  call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
+              pxs, py, pzs, pu, pv, pw, dUdy, duvdy, dvvdy,& 
+              nprtcls, nt_saved, itsave, timestep, time, ncid_save)
 
   do it=1,nt-1
 
@@ -208,7 +222,9 @@ program particleTracer
     if (mod(it, save_every) .eq. 0) then
       itsave = itsave + 1
       print *, 'Save trajectories for itsave=', itsave
-      call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, pxs, py, pzs, pu, pv, pw, nprtcls, nt_saved, itsave, timestep, time, ncid_save)
+      call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
+                  pxs, py, pzs, pu, pv, pw, dUdy, duvdy, dvvdy,& 
+                  nprtcls, nt_saved, itsave, timestep, time, ncid_save)
     endif
 
   enddo
