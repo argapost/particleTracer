@@ -1,5 +1,5 @@
 subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
-                  px, py, pz, pu, pv, pw, dumdy, duvdy, dvvdy,& 
+                  px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
                   nprtcls, nt_saved, itsave, timestep, time, ncid_save)
   use netcdf
   use :: interpolate_mod
@@ -11,7 +11,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,&
 
   real(4) :: time
 
-  real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
+  real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls), pxs(nprtcls), pzs(nprtcls)
   real(4) :: pufl(nprtcls), pu(nprtcls), pv(nprtcls), pw(nprtcls), pp(nprtcls), peps(nprtcls)
   real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls), pdpdx(nprtcls)
   real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls), pdpdy(nprtcls)
@@ -244,9 +244,9 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,&
   countv_o(1) = nprtcls
   countv_o(2) = 1
 
-  call io_check(nf90_put_var(ncid_save, varid_o(1), px, startv_o, countv_o))
+  call io_check(nf90_put_var(ncid_save, varid_o(1), pxs, startv_o, countv_o))
   call io_check(nf90_put_var(ncid_save, varid_o(2), py, startv_o, countv_o))
-  call io_check(nf90_put_var(ncid_save, varid_o(3), pz, startv_o, countv_o))
+  call io_check(nf90_put_var(ncid_save, varid_o(3), pzs, startv_o, countv_o))
 
   call io_check(nf90_put_var(ncid_save, varid_o(4), pu, startv_o, countv_o))
   call io_check(nf90_put_var(ncid_save, varid_o(5), pv, startv_o, countv_o))

@@ -153,7 +153,7 @@ program particleTracer
   ! Save initial position and interpolated fields
   print *, "Save first timestep"
   call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
-              pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
+              px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
               nprtcls, nt_saved, itsave, timestep, time, ncid_save)
 
   do it=1,nt-1
@@ -178,13 +178,13 @@ program particleTracer
       pzp = pz(ip) + dt * pw(ip)
 
       ! If particle predictor position outside of the box reset inside the box
-      if (pxp .gt. Lx) pxp = pxp - Lx
-      if (pyp .gt. Ly) pyp = Ly
-      if (pzp .gt. Lz) pzp = pzp - Lz
+      if (pxp .ge. Lx) pxp = pxp - Lx
+      if (pyp .ge. Ly) pyp = Ly
+      if (pzp .ge. Lz) pzp = pzp - Lz
 
-      if (pxp .le. 0.) pxp = pxp + Lx
-      if (pyp .le. 0.) pyp = 0
-      if (pzp .le. 0.) pzp = pzp + Lz
+      if (pxp .lt. 0.) pxp = pxp + Lx
+      if (pyp .lt. 0.) pyp = 0
+      if (pzp .lt. 0.) pzp = pzp + Lz
 
       ! Interpolate velocity at predictor location u(t+dt)
       pup = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
@@ -205,9 +205,9 @@ program particleTracer
       if (py(ip) .ge. Ly) py(ip) = Ly
       if (pz(ip) .ge. Lz) pz(ip) = pz(ip) - Lz
 
-      if (px(ip) .le. 0.) px(ip) = px(ip) + Lx
-      if (py(ip) .le. 0.) py(ip) = 0
-      if (pz(ip) .le. 0.) pz(ip) = pz(ip) + Lz
+      if (px(ip) .lt. 0.) px(ip) = px(ip) + Lx
+      if (py(ip) .lt. 0.) py(ip) = 0
+      if (pz(ip) .lt. 0.) pz(ip) = pz(ip) + Lz
 
       ! Interpolate velocity u(t+dt) at final location after correction
       pu(ip) = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
@@ -223,7 +223,7 @@ program particleTracer
       itsave = itsave + 1
       print *, 'Save trajectories for itsave=', itsave
       call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
-                  pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
+                  px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
                   nprtcls, nt_saved, itsave, timestep, time, ncid_save)
     endif
 
