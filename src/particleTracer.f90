@@ -35,7 +35,7 @@ program particleTracer
   real(4) :: w(1:nx, 1:ny, 1:nz)
 
   real(4) :: grid_y(ny)
-  real(4) :: dUdy(ny), duvdy(ny), dvvdy(ny)
+  real(4) :: dumdy(ny), duvdy(ny), dvvdy(ny)
   integer :: ncid, varid(3)
 
   integer ::  ip, nb_procs, OMP_GET_NUM_THREADS
@@ -108,15 +108,15 @@ program particleTracer
   call io_check(nf90_get_var(ncid,varid(1),grid_y,count=(/ny/)))
   call io_check(nf90_close(ncid))
 
-  ! Load dUdy, duvdy, dvvdy
-  print *, "Read dUdy"
+  ! Load dumdy, duvdy, dvvdy
+  print *, "Read dumdy"
   call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//'statistics_fy.nc', &
                   mode=nf90_nowrite,ncid=ncid))
 
   call io_check(nf90_inq_varid(ncid,'dUdy',varid(1)))
   call io_check(nf90_inq_varid(ncid,'duvdy',varid(2)))
   call io_check(nf90_inq_varid(ncid,'dvvdy',varid(3)))
-  call io_check(nf90_get_var(ncid,varid(1),dUdy,count=(/ny/)))
+  call io_check(nf90_get_var(ncid,varid(1),dumdy,count=(/ny/)))
   call io_check(nf90_get_var(ncid,varid(2),duvdy,count=(/ny/)))
   call io_check(nf90_get_var(ncid,varid(3),dvvdy,count=(/ny/)))
   call io_check(nf90_close(ncid))
@@ -153,7 +153,7 @@ program particleTracer
   ! Save initial position and interpolated fields
   print *, "Save first timestep"
   call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
-              pxs, py, pzs, pu, pv, pw, dUdy, duvdy, dvvdy,& 
+              pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
               nprtcls, nt_saved, itsave, timestep, time, ncid_save)
 
   do it=1,nt-1
@@ -223,7 +223,7 @@ program particleTracer
       itsave = itsave + 1
       print *, 'Save trajectories for itsave=', itsave
       call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,& 
-                  pxs, py, pzs, pu, pv, pw, dUdy, duvdy, dvvdy,& 
+                  pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy,& 
                   nprtcls, nt_saved, itsave, timestep, time, ncid_save)
     endif
 
