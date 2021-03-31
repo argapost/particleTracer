@@ -5,13 +5,13 @@ module interpolate_mod
     integer, intent(in) :: nx, ny, nz
     real(4), intent(in) :: field(0:nx-1, 0:ny-1, 0:nz-1), grid_y(0:ny-1)
     real(4), intent(in) :: locx, locy, locz
-    real, intent(in) :: Lx, Ly, Lz
+    real(4), intent(in) :: Lx, Ly, Lz
 
     real(4) :: res
     
-    real :: pi
-    real :: ctx, cty, ctz
-    real :: xp(3,0:2), vol(0:1,0:1,0:1)
+    real(4) :: pi
+    real(4) :: ctx, cty, ctz
+    real(4) :: xp(3,0:2), vol(0:1,0:1,0:1)
     integer :: ip(3,0:1)
 
     pi = acos(-1.)
@@ -76,12 +76,12 @@ module interpolate_mod
     integer, intent(in) :: ny
     real(4), intent(in) :: field(0:ny-1), grid_y(0:ny-1)
     real(4), intent(in) :: locy
-    real, intent(in) :: Ly
+    real(4), intent(in) :: Ly
 
     real(4) :: res
     
-    real :: pi
-    real :: xp(0:2), vol(0:1)
+    real(4) :: pi
+    real(4) :: xp(0:2), vol(0:1)
     integer :: ip(0:1)
 
     pi = acos(-1.)

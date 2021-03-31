@@ -6,7 +6,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz,&
 
   integer :: nx, ny, nz, nprtcls, nt_saved
   integer :: timestep, itsave
-  real :: Lx, Ly, Lz, pi 
+  real(4) :: Lx, Ly, Lz, pi 
   real(4) :: grid_y(ny)
 
   real(4) :: time

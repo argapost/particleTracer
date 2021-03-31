@@ -5,7 +5,7 @@ subroutine p_initialize(npx, npy, npz, Lx, Ly, Lz, px, py, pz, nprtcls)
    real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
    real(4) :: z(npz), y(npy)
    real(4) :: Ym(npz, npy), Zm(npz, npy)
-   real(4) :: x1, x2, x3, epsi
+   real(4) :: x1, x2, x3, Lx, Ly, Lz, epsi
 
    ! y = (/( i * 0.005, i=0,npy-1)/)
    ! z = (/( i * 0.005, i=0,npz-1)/)
@@ -36,9 +36,6 @@ subroutine p_initialize(npx, npy, npz, Lx, Ly, Lz, px, py, pz, nprtcls)
       px(i) = x1*(Lx/2)
       py(i) = x2*Ly
       pz(i) = x3*Lz
-      if (i < 100) then
-         print *, px(i), py(i), pz(i)
-      end if
 
    end do
 

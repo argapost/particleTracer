@@ -17,7 +17,7 @@ program particleTracer
   integer :: it, itsave, timestep, save_every=20
   integer :: nt_saved, ncid_save
 
-  real :: Lx, Ly, Lz, pi 
+  real(4) :: Lx, Ly, Lz, pi 
   real(4) :: dt, time, time_prev
 
   integer, parameter :: nprtcls=10000
