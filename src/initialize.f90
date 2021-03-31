@@ -36,6 +36,9 @@ subroutine p_initialize(npx, npy, npz, Lx, Ly, Lz, px, py, pz, nprtcls)
       px(i) = x1*(Lx/2)
       py(i) = x2*Ly
       pz(i) = x3*Lz
+      if (i < 100) then
+         print *, px(i), py(i), pz(i)
+      end if
 
    end do
 
@@ -47,4 +50,3 @@ subroutine meshgrid(x, y, Xm, Ym, nx, ny)
    Xm = spread(x, 1, size(y))
    Ym = spread(y, 2, size(x))
 end subroutine
-
