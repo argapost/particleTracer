@@ -7,10 +7,12 @@
 
 ifeq ($(CMP),gcc)
 FC = mpif90
+FFLAGS =
 NETCDFloc = /usr/local
 NETCDFlib = -I${NETCDFloc}/include -L${NETCDFloc}/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz -lcurl -lm
 else
 FC = mpiifort
+FFLAGS = -fpp -O3 -xSSE4.2 -axAVX,CORE-AVX-I,CORE-AVX2 -ipo -fp-model fast=2 -mcmodel=large -safe-cray-ptr -I$(MPI_ROOT)/libFFLAGS = -fpp -O3 -xSSE4.2 -axAVX,CORE-AVX-I,CORE-AVX2 -ipo -fp-model fast=2 -mcmodel=large -safe-cray-ptr -I$(MPI_ROOT)/lib
 NETCDFloc =
 NETCDFlib = -lnetcdf -lnetcdff
 endif
@@ -23,8 +25,8 @@ SRC = $(SRCDIR)/interpolate_mod.f90 $(SRCDIR)/particleTracer.f90 $(SRCDIR)/initi
 OBJ = $(SRC:%.f90=%.o)
 
 ###### OPTIONS settins ########
-OPT = -I$(SRCDIR) $(NETCDFlib)
-LINKOPT = $(NETCDFlib)
+OPT = -I$(SRCDIR) $(NETCDFlib) $(FFLAGS)
+LINKOPT = $(NETCDFlib) $(FFLAGS)
 
 
 # -------------------------------------------------
@@ -35,12 +37,12 @@ particleTracer : $(OBJ)
 	$(FC) -o $@ $(LINKOPT) $(OBJ) $(NETCDFlib)
 
 $(OBJ):$(SRCDIR)%.o : $(SRCDIR)%.f90
-	$(FC) $(OPT) -c $<
+	$(FC) $(FFLAGS) $(OPT) -c $<
 	mv $(@F) ${SRCDIR}
 	# mv *.mod ${SRCDIR}
 
 %.o : %.f90
-	$(FC) -c $<
+	$(FC) $(FFLAGS) -c $<
 
 
 .PHONY: clean
