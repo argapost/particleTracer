@@ -2,20 +2,24 @@
 # Makefile
 #=======================================================================
 
-CMP = gcc #intel, gcc
-FC = mpif90
 
-######## NETCDF include ########
+# CMP = gcc #intel, gcc
+
+ifeq ($(CMP),gcc)
+FC = mpif90
 NETCDFloc = /usr/local
 NETCDFlib = -I${NETCDFloc}/include -L${NETCDFloc}/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz -lcurl -lm
-#NETCDFloc = 
-#NETCDFlib = -lnetcdf -lnetcdff
+else
+FC = mpiifort
+NETCDFloc =
+NETCDFlib = -lnetcdf -lnetcdff
+endif
 
 MODDIR = ./mod
 SRCDIR = ./src
 
 ### List of all files for the main code
-SRC = $(SRCDIR)/interpolate_mod.f90 $(SRCDIR)/particleTracer.f90 $(SRCDIR)/initialize.f90 $(SRCDIR)/load_velocity.f90 $(SRCDIR)/save.f90 
+SRC = $(SRCDIR)/interpolate_mod.f90 $(SRCDIR)/particleTracer.f90 $(SRCDIR)/initialize.f90 $(SRCDIR)/load_velocity.f90 $(SRCDIR)/save.f90
 OBJ = $(SRC:%.f90=%.o)
 
 ###### OPTIONS settins ########
@@ -31,7 +35,7 @@ particleTracer : $(OBJ)
 	$(FC) -o $@ $(LINKOPT) $(OBJ) $(NETCDFlib)
 
 $(OBJ):$(SRCDIR)%.o : $(SRCDIR)%.f90
-	$(FC) $(OPT) -c $< 
+	$(FC) $(OPT) -c $<
 	mv $(@F) ${SRCDIR}
 	# mv *.mod ${SRCDIR}
 
