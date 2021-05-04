@@ -48,7 +48,7 @@ program particleTracer
   real ::  temps_elapsed
 
   character(100) :: case_fn = "re9502pipi."
-  character(100) :: output_fn = "2mrandom_t1"
+  character(100) :: output_fn = "2m_hx_hy_300ts_evr1"
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   !=================================================================
   !                        Initialisations.
@@ -126,7 +126,7 @@ program particleTracer
 
   ! initialize particle position
   print *, "Initialse position"
-  call p_initialize(1, 100, 100, Lx, Ly, Lz, px, py, pz, nprtcls)
+  call p_initialize(1, 100, 100, Lx/2.0, Ly/2.0, Lz, px, py, pz, nprtcls)
   pxs = px
   pzs = pz
 

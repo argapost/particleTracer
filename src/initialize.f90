@@ -33,7 +33,7 @@ subroutine p_initialize(npx, npy, npz, Lx, Ly, Lz, px, py, pz, nprtcls)
     x3 = min(x3, 1.-epsi)
     x3 = max(x3, epsi)
 
-    px(i) = x1*(Lx/2)
+    px(i) = x1*Lx
     py(i) = x2*Ly
     pz(i) = x3*Lz
 
