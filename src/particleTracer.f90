@@ -13,8 +13,10 @@ program particleTracer
   integer, parameter :: nz = 512
 
   integer, parameter :: nt = 300
-  integer, parameter :: istep = 1, istart = 0
-  integer :: it, itsave, timestep, save_every = 1
+  integer, parameter :: istep = 1
+  integer :: istart
+  character(100) :: istart_char
+  integer :: it, itsave, timestep, save_every = 2
   integer :: nt_saved, ncid_save
 
   real(4) :: Lx, Ly, Lz, pi
@@ -48,7 +50,7 @@ program particleTracer
   real ::  temps_elapsed
 
   character(100) :: case_fn = "re9502pipi."
-  character(100) :: output_fn = "2m_hx_hy_300ts_evr1"
+  character(100) :: output_fn = "2m_hx_hy_300ts_evr2"
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   !=================================================================
   !                        Initialisations.
@@ -76,6 +78,8 @@ program particleTracer
 
   it = 0
   itsave = 1
+  call get_command_argument(1, istart_char)   !first, read in the two values
+  read(istart_char, *)istart                    !then, convert them to int
   timestep = (it*istep) + istart
   time = 0.
   time_prev = 0.
@@ -153,7 +157,7 @@ program particleTracer
   print *, "Save first timestep"
   call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
               px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy, &
-              nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save)
+              nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save, istart_char)
 
   do it = 1, nt - 1
 
@@ -223,7 +227,7 @@ program particleTracer
       print *, 'Save trajectories for itsave=', itsave
       call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
                   px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy, &
-                  nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save)
+                  nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save, istart_char)
     end if
 
   end do

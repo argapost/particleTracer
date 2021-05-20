@@ -1,6 +1,6 @@
 subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
                   px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy, &
-                  nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save)
+                  nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save, istart_char)
   use netcdf
   use :: interpolate_mod
 
@@ -37,7 +37,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
   integer :: ncid, ncid_save
 
   character(100) :: output_fn
-  character(100) :: int2char, case_fn = "re9502pipi."
+  character(100) :: int2char, case_fn = "re9502pipi.istart_", istart_char
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   ! Load from NetCDF
 
@@ -177,7 +177,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
 
   ! Save to NetCDF
   if (itsave == 1) then
-    call io_check(nf90_create(path=trim(data_dir)//'particles/'//trim(case_fn)//trim(output_fn)//'.nc', &
+    call io_check(nf90_create(path=trim(data_dir)//'particles/'//trim(case_fn)//trim(istart_char)//'.'//trim(output_fn)//'.nc', &
                               cmode=or(nf90_clobber, nf90_netcdf4), ncid=ncid_save))
 
     call io_check(nf90_def_dim(ncid_save, 'particles', nprtcls, dimid(1)))
