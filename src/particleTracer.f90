@@ -87,7 +87,7 @@ program particleTracer
   itsave = 1
   ! call get_command_argument(1, istart_char)   !first, read in the two values
   ! read(istart_char, *)istart                    !then, convert them to int
-  istart = rank * 10 + 620
+  istart = rank * 10 + 0
   write(istart_char, *)istart
 
   timestep = (it*istep) + istart

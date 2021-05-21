@@ -177,7 +177,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
 
   ! Save to NetCDF
   if (itsave == 1) then
-    call io_check(nf90_create(path=trim(data_dir)//trim(case_fn)//'istart_'//trim(istart_char)//'.'//trim(output_fn)//'.nc', &
+    call io_check(nf90_create(path=trim(data_dir)//trim(case_fn)//'istart_'//trim(adjustl(istart_char))//'.'//trim(output_fn)//'.nc', &
                               cmode=or(nf90_clobber, nf90_netcdf4), ncid=ncid_save))
 
     call io_check(nf90_def_dim(ncid_save, 'particles', nprtcls, dimid(1)))
