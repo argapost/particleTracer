@@ -49,12 +49,19 @@ program particleTracer
   integer :: nb_periodes
   real ::  temps_elapsed
 
+  integer :: rank, size, ierr
+
   character(100) :: case_fn = "re9502pipi."
   character(100) :: output_fn = "2m_hx_hy_300ts_evr2"
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   !=================================================================
   !                        Initialisations.
   !=================================================================
+
+   !! Initialise MPI
+  call MPI_INIT(ierr)
+  call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
+  call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
 
   nb_procs = 1
 
@@ -78,15 +85,18 @@ program particleTracer
 
   it = 0
   itsave = 1
-  call get_command_argument(1, istart_char)   !first, read in the two values
-  read(istart_char, *)istart                    !then, convert them to int
+  ! call get_command_argument(1, istart_char)   !first, read in the two values
+  ! read(istart_char, *)istart                    !then, convert them to int
+  istart = rank * 10 + 620
+  write(istart_char, *)istart
+
   timestep = (it*istep) + istart
   time = 0.
   time_prev = 0.
 
   nt_saved = ceiling(real(nt/save_every))
 
-  ncid_save = 111
+  ncid_save = rank
 
   !-------------------------------------------------------
   !       initialization of fields
@@ -233,6 +243,8 @@ program particleTracer
   end do
   ! Close netcdf file
   call io_check(nf90_close(ncid_save))
+
+  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
   CALL CPU_TIME(t2)
   CALL SYSTEM_CLOCK(COUNT=nb_periodes_final)
