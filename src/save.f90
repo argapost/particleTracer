@@ -42,7 +42,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
   ! Load from NetCDF
 
   write (int2char, '(I5.5)') timestep
-  call io_check(nf90_open(path=trim(data_dir)//'u_du_ddu_eps_p/'//trim(case_fn)//trim(int2char)//'.u_du_ddu_eps_p.nc', &
+  call io_check(nf90_open(path=trim(data_dir)//'u_du_ddu_eps_p/re9502pipi.'//trim(int2char)//'.u_du_ddu_eps_p.nc', &
                           mode=nf90_nowrite, ncid=ncid))
 
   call io_check(nf90_inq_varid(ncid, 'dudx', varid_i(1)))
