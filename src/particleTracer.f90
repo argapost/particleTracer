@@ -12,7 +12,7 @@ program particleTracer
   integer, parameter :: ny = 385
   integer, parameter :: nz = 512
 
-  integer, parameter :: nt = 300
+  integer, parameter :: nt = 100
   integer, parameter :: istep = 1, istart = 0
   integer :: it, itsave, timestep, save_every = 1
   integer :: nt_saved, ncid_save
@@ -20,12 +20,14 @@ program particleTracer
   real(4) :: Lx, Ly, Lz, pi
   real(4) :: dt, time, time_prev
 
-  integer, parameter :: nprtcls = 2000000
+  integer, parameter :: nprtcls = 2000, nspheres = 10
+  real(4) :: radius
 
-  real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
-  real(4) :: pxs(nprtcls), pzs(nprtcls)
+  real(4) :: px(nprtcls, nspheres), py(nprtcls, nspheres), pz(nprtcls, nspheres)
+  real(4) :: sx(nprtcls, nspheres), sy(nprtcls, nspheres), sz(nprtcls, nspheres)
+  real(4) :: pxs(nprtcls, nspheres), pzs(nprtcls, nspheres)
   real(4) :: pxp, pyp, pzp
-  real(4) :: pu(nprtcls), pv(nprtcls), pw(nprtcls)
+  real(4) :: pu(nprtcls, nspheres), pv(nprtcls, nspheres), pw(nprtcls, nspheres)
   real(4) :: pup, pvp, pwp
 
   ! 3D arrays
@@ -37,7 +39,7 @@ program particleTracer
   real(4) :: dumdy(ny), duvdy(ny), dvvdy(ny)
   integer :: ncid, varid(3)
 
-  integer ::  ip, nb_procs, OMP_GET_NUM_THREADS
+  integer ::  ip, is, nb_procs, OMP_GET_NUM_THREADS
 
   REAL :: t1, t2
   integer :: nb_periodes_initial
@@ -48,7 +50,7 @@ program particleTracer
   real ::  temps_elapsed
 
   character(100) :: case_fn = "re9502pipi."
-  character(100) :: output_fn = "2m_hx_hy_300ts_evr1"
+  character(100) :: output_fn = "test"
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
   !=================================================================
   !                        Initialisations.
@@ -124,9 +126,19 @@ program particleTracer
   !              initialization of lagrangian particles
   !-------------------------------------------------------
 
-  ! initialize particle position
+  ! initialize default sphere
   print *, "Initialse position"
-  call p_initialize(1, 100, 100, Lx/2.0, Ly/2.0, Lz, px, py, pz, nprtcls)
+  call sphere_initialize(sx, sy, sz, nprtcls)
+
+  ! create multiple spheres
+  radius = 0.19
+  do is = 1, nspheres
+    radius = radius - (is - 1.0) * 0.018
+    px(:, is) = sx(:, is) * radius + 0.3
+    py(:, is) = sy(:, is) * radius + 0.2
+    pz(:, is) = sz(:, is) * radius + 0.3
+  end do
+
   pxs = px
   pzs = pz
 
@@ -137,23 +149,25 @@ program particleTracer
 
   ! Interpolate velocity at initial particle position
 
+  do is = 1, nspheres
 !$OMP PARALLEL
 !$OMP DO SCHEDULE(RUNTIME)
-  do ip = 1, nprtcls
+    do ip = 1, nprtcls
 
-    pu(ip) = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pv(ip) = interpolate(v, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pw(ip) = interpolate(w, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pu(ip, is) = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pv(ip, is) = interpolate(v, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pw(ip, is) = interpolate(w, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-  end do
+    end do
 !$OMP END DO
 !$OMP END PARALLEL
+  end do
 
   ! Save initial position and interpolated fields
   print *, "Save first timestep"
   call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
               px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy, &
-              nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save)
+              nprtcls, nspheres, nt_saved, itsave, timestep, time, output_fn, ncid_save)
 
   do it = 1, nt - 1
 
@@ -167,55 +181,57 @@ program particleTracer
     ! write(*,102)'time =',time,'it =',it,'dt =',dt
     print *, 'time =', time, 'it =', it, 'dt =', dt
 
+    do is = 1, nspheres
 !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(pxp, pyp, pzp, pup, pvp, pwp)
 !$OMP DO SCHEDULE(RUNTIME)
-    do ip = 1, nprtcls
+      do ip = 1, nprtcls
 
-      ! Find x(t+dt) with u(t) --- Predictor step
-      pxp = px(ip) + dt*pu(ip)
-      pyp = py(ip) + dt*pv(ip)
-      pzp = pz(ip) + dt*pw(ip)
+        ! Find x(t+dt) with u(t) --- Predictor step
+        pxp = px(ip, is) + dt*pu(ip, is)
+        pyp = py(ip, is) + dt*pv(ip, is)
+        pzp = pz(ip, is) + dt*pw(ip, is)
 
-      ! If particle predictor position outside of the box reset inside the box
-      if (pxp .ge. Lx) pxp = pxp - Lx
-      if (pyp .ge. Ly) pyp = Ly
-      if (pzp .ge. Lz) pzp = pzp - Lz
+        ! If particle predictor position outside of the box reset inside the box
+        if (pxp .ge. Lx) pxp = pxp - Lx
+        if (pyp .ge. Ly) pyp = Ly
+        if (pzp .ge. Lz) pzp = pzp - Lz
 
-      if (pxp .lt. 0.) pxp = pxp + Lx
-      if (pyp .lt. 0.) pyp = 0
-      if (pzp .lt. 0.) pzp = pzp + Lz
+        if (pxp .lt. 0.) pxp = pxp + Lx
+        if (pyp .lt. 0.) pyp = 0
+        if (pzp .lt. 0.) pzp = pzp + Lz
 
-      ! Interpolate velocity at predictor location u(t+dt)
-      pup = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
-      pvp = interpolate(v, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
-      pwp = interpolate(w, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
+        ! Interpolate velocity at predictor location u(t+dt)
+        pup = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
+        pvp = interpolate(v, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
+        pwp = interpolate(w, grid_y, nx, ny, nz, Lx, Ly, Lz, pxp, pyp, pzp)
 
-      ! Find x(t+dt) with (u(t) + u(t+dt))/2 --- Corrector step
-      px(ip) = px(ip) + dt*(pu(ip) + pup)/2
-      py(ip) = py(ip) + dt*(pv(ip) + pvp)/2
-      pz(ip) = pz(ip) + dt*(pw(ip) + pwp)/2
+        ! Find x(t+dt) with (u(t) + u(t+dt))/2 --- Corrector step
+        px(ip, is) = px(ip, is) + dt*(pu(ip, is) + pup)/2
+        py(ip, is) = py(ip, is) + dt*(pv(ip, is) + pvp)/2
+        pz(ip, is) = pz(ip, is) + dt*(pw(ip, is) + pwp)/2
 
-      ! Location of particles that can go outside of the box
-      pxs(ip) = pxs(ip) + dt*(pu(ip) + pup)/2
-      pzs(ip) = pzs(ip) + dt*(pw(ip) + pwp)/2
+        ! Location of particles that can go outside of the box
+        pxs(ip, is) = pxs(ip, is) + dt*(pu(ip, is) + pup)/2
+        pzs(ip, is) = pzs(ip, is) + dt*(pw(ip, is) + pwp)/2
 
-      ! If particle position outside of the box reset inside the box
-      if (px(ip) .ge. Lx) px(ip) = px(ip) - Lx
-      if (py(ip) .ge. Ly) py(ip) = Ly
-      if (pz(ip) .ge. Lz) pz(ip) = pz(ip) - Lz
+        ! If particle position outside of the box reset inside the box
+        if (px(ip, is) .ge. Lx) px(ip, is) = px(ip, is) - Lx
+        if (py(ip, is) .ge. Ly) py(ip, is) = Ly
+        if (pz(ip, is) .ge. Lz) pz(ip, is) = pz(ip, is) - Lz
 
-      if (px(ip) .lt. 0.) px(ip) = px(ip) + Lx
-      if (py(ip) .lt. 0.) py(ip) = 0
-      if (pz(ip) .lt. 0.) pz(ip) = pz(ip) + Lz
+        if (px(ip, is) .lt. 0.) px(ip, is) = px(ip, is) + Lx
+        if (py(ip, is) .lt. 0.) py(ip, is) = 0
+        if (pz(ip, is) .lt. 0.) pz(ip, is) = pz(ip, is) + Lz
 
-      ! Interpolate velocity u(t+dt) at final location after correction
-      pu(ip) = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-      pv(ip) = interpolate(v, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-      pw(ip) = interpolate(w, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+        ! Interpolate velocity u(t+dt) at final location after correction
+        pu(ip, is) = interpolate(u, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+        pv(ip, is) = interpolate(v, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+        pw(ip, is) = interpolate(w, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    end do
+      end do
 !$OMP END DO
 !$OMP END PARALLEL
+    end do
 
     ! Save particles position and interpolated fields
     if (mod(it, save_every) .eq. 0) then
@@ -223,7 +239,7 @@ program particleTracer
       print *, 'Save trajectories for itsave=', itsave
       call p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
                   px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy, &
-                  nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save)
+                  nprtcls, nspheres, nt_saved, itsave, timestep, time, output_fn, ncid_save)
     end if
 
   end do

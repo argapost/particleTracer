@@ -1,26 +1,28 @@
 subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
                   px, pz, pxs, py, pzs, pu, pv, pw, dumdy, duvdy, dvvdy, &
-                  nprtcls, nt_saved, itsave, timestep, time, output_fn, ncid_save)
+                  nprtcls, nspheres, nt_saved, itsave, timestep, time, output_fn, ncid_save)
   use netcdf
   use :: interpolate_mod
 
-  integer :: nx, ny, nz, nprtcls, nt_saved
+  integer :: nx, ny, nz, nprtcls, nspheres, nt_saved
   integer :: timestep, itsave
+  integer :: ip, is
   real(4) :: Lx, Ly, Lz, pi
   real(4) :: grid_y(ny)
 
   real(4) :: time
 
-  real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls), pxs(nprtcls), pzs(nprtcls)
-  real(4) :: pufl(nprtcls), pu(nprtcls), pv(nprtcls), pw(nprtcls), pp(nprtcls), peps(nprtcls)
-  real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls), pdpdx(nprtcls)
-  real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls), pdpdy(nprtcls)
-  real(4) :: pdudz(nprtcls), pdvdz(nprtcls), pdwdz(nprtcls), pdpdz(nprtcls)
-  real(4) :: pdudxdx(nprtcls), pdvdxdx(nprtcls), pdwdxdx(nprtcls)
-  real(4) :: pdudydy(nprtcls), pdvdydy(nprtcls), pdwdydy(nprtcls)
-  real(4) :: pdudzdz(nprtcls), pdvdzdz(nprtcls), pdwdzdz(nprtcls)
-  real(4) :: pdumdy(nprtcls), pduvdy(nprtcls), pdvvdy(nprtcls)
-  real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
+  real(4) :: px(nprtcls, nspheres), py(nprtcls, nspheres), pz(nprtcls, nspheres), pxs(nprtcls, nspheres), pzs(nprtcls, nspheres)
+  real(4) :: pufl(nprtcls, nspheres), pu(nprtcls, nspheres), pv(nprtcls, nspheres), pw(nprtcls, nspheres)
+  real(4) :: pp(nprtcls, nspheres), peps(nprtcls, nspheres)
+  real(4) :: pdudx(nprtcls, nspheres), pdvdx(nprtcls, nspheres), pdwdx(nprtcls, nspheres), pdpdx(nprtcls, nspheres)
+  real(4) :: pdudy(nprtcls, nspheres), pdvdy(nprtcls, nspheres), pdwdy(nprtcls, nspheres), pdpdy(nprtcls, nspheres)
+  real(4) :: pdudz(nprtcls, nspheres), pdvdz(nprtcls, nspheres), pdwdz(nprtcls, nspheres), pdpdz(nprtcls, nspheres)
+  real(4) :: pdudxdx(nprtcls, nspheres), pdvdxdx(nprtcls, nspheres), pdwdxdx(nprtcls, nspheres)
+  real(4) :: pdudydy(nprtcls, nspheres), pdvdydy(nprtcls, nspheres), pdwdydy(nprtcls, nspheres)
+  real(4) :: pdudzdz(nprtcls, nspheres), pdvdzdz(nprtcls, nspheres), pdwdzdz(nprtcls, nspheres)
+  real(4) :: pdumdy(nprtcls, nspheres), pduvdy(nprtcls, nspheres), pdvvdy(nprtcls, nspheres)
+  real(4) :: pdudt(nprtcls, nspheres), pdvdt(nprtcls, nspheres), pdwdt(nprtcls, nspheres)
 
   ! 3D arrays
   real(4) :: eps(nx, ny, nz), p(nx, ny, nz), ufl(nx, ny, nz)
@@ -33,7 +35,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
   real(4) :: dumdy(ny), duvdy(ny), dvvdy(ny)
   real(4) :: dudt(nx, ny, nz), dvdt(nx, ny, nz), dwdt(nx, ny, nz)
 
-  integer :: varid_i(27), varid_o(37), startv_o(2), countv_o(2), countv_i(3), dimid(2)
+  integer :: varid_i(27), varid_o(37), startv_o(3), countv_o(3), countv_i(3), dimid(3)
   integer :: ncid, ncid_save
 
   character(100) :: output_fn
@@ -125,55 +127,56 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
 
   call io_check(nf90_close(ncid))
 
+  do is = 1, nspheres
 !$OMP PARALLEL
 !$OMP DO SCHEDULE(RUNTIME)
-  ! Interpolate fields at particle position
-  do ip = 1, nprtcls
+    do ip = 1, nprtcls
 
-    pufl(ip) = interpolate(ufl, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pufl(ip, is) = interpolate(ufl, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdudx(ip) = interpolate(dudx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdudy(ip) = interpolate(dudy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdudz(ip) = interpolate(dudz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdudx(ip, is) = interpolate(dudx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdudy(ip, is) = interpolate(dudy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdudz(ip, is) = interpolate(dudz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdvdx(ip) = interpolate(dvdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdvdy(ip) = interpolate(dvdy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdvdz(ip) = interpolate(dvdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdvdx(ip, is) = interpolate(dvdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdvdy(ip, is) = interpolate(dvdy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdvdz(ip, is) = interpolate(dvdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdwdx(ip) = interpolate(dwdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdwdy(ip) = interpolate(dwdy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdwdz(ip) = interpolate(dwdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdwdx(ip, is) = interpolate(dwdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdwdy(ip, is) = interpolate(dwdy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdwdz(ip, is) = interpolate(dwdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    peps(ip) = interpolate(eps, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      peps(ip, is) = interpolate(eps, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pp(ip) = interpolate(p, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdpdx(ip) = interpolate(dpdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdpdy(ip) = interpolate(dpdy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdpdz(ip) = interpolate(dpdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pp(ip, is) = interpolate(p, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdpdx(ip, is) = interpolate(dpdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdpdy(ip, is) = interpolate(dpdy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdpdz(ip, is) = interpolate(dpdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdudxdx(ip) = interpolate(dudxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdudydy(ip) = interpolate(dudydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdudzdz(ip) = interpolate(dudzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdudxdx(ip, is) = interpolate(dudxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdudydy(ip, is) = interpolate(dudydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdudzdz(ip, is) = interpolate(dudzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdvdxdx(ip) = interpolate(dvdxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdvdydy(ip) = interpolate(dvdydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdvdzdz(ip) = interpolate(dvdzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdvdxdx(ip, is) = interpolate(dvdxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdvdydy(ip, is) = interpolate(dvdydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdvdzdz(ip, is) = interpolate(dvdzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdwdxdx(ip) = interpolate(dwdxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdwdydy(ip) = interpolate(dwdydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdwdzdz(ip) = interpolate(dwdzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdwdxdx(ip, is) = interpolate(dwdxdx, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdwdydy(ip, is) = interpolate(dwdydy, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdwdzdz(ip, is) = interpolate(dwdzdz, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdudt(ip) = interpolate(dudt, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdvdt(ip) = interpolate(dvdt, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
-    pdwdt(ip) = interpolate(dwdt, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip), py(ip), pz(ip))
+      pdudt(ip, is) = interpolate(dudt, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdvdt(ip, is) = interpolate(dvdt, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
+      pdwdt(ip, is) = interpolate(dwdt, grid_y, nx, ny, nz, Lx, Ly, Lz, px(ip, is), py(ip, is), pz(ip, is))
 
-    pdumdy(ip) = interpolate1d(dumdy, grid_y, ny, Ly, py(ip))
-    pduvdy(ip) = interpolate1d(duvdy, grid_y, ny, Ly, py(ip))
-    pdvvdy(ip) = interpolate1d(dvvdy, grid_y, ny, Ly, py(ip))
+      pdumdy(ip, is) = interpolate1d(dumdy, grid_y, ny, Ly, py(ip, is))
+      pduvdy(ip, is) = interpolate1d(duvdy, grid_y, ny, Ly, py(ip, is))
+      pdvvdy(ip, is) = interpolate1d(dvvdy, grid_y, ny, Ly, py(ip, is))
 
-  end do
+    end do
 !$OMP END DO
 !$OMP END PARALLEL
+  end do
 
   ! Save to NetCDF
   if (itsave == 1) then
@@ -181,7 +184,8 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
                               cmode=or(nf90_clobber, nf90_netcdf4), ncid=ncid_save))
 
     call io_check(nf90_def_dim(ncid_save, 'particles', nprtcls, dimid(1)))
-    call io_check(nf90_def_dim(ncid_save, 't', nt_saved, dimid(2)))
+    call io_check(nf90_def_dim(ncid_save, 'spheres', nspheres, dimid(2)))
+    call io_check(nf90_def_dim(ncid_save, 't', nt_saved, dimid(3)))
 
     call io_check(nf90_def_var(ncid_save, 'px', nf90_float, dimid, varid_o(1)))
     call io_check(nf90_def_var(ncid_save, 'py', nf90_float, dimid, varid_o(2)))
@@ -232,16 +236,18 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
     call io_check(nf90_def_var(ncid_save, 'pdvdt', nf90_float, dimid, varid_o(35)))
     call io_check(nf90_def_var(ncid_save, 'pdwdt', nf90_float, dimid, varid_o(36)))
 
-    call io_check(nf90_def_var(ncid_save, 'time', nf90_float, dimid(2), varid_o(37)))
+    call io_check(nf90_def_var(ncid_save, 'time', nf90_float, dimid(3), varid_o(37)))
 
     call io_check(nf90_enddef(ncid_save))
   end if
 
   startv_o(1) = 1
-  startv_o(2) = itsave
+  startv_o(2) = 1
+  startv_o(3) = itsave
 
   countv_o(1) = nprtcls
-  countv_o(2) = 1
+  countv_o(2) = nspheres
+  countv_o(3) = 1
 
   call io_check(nf90_put_var(ncid_save, varid_o(1), pxs, startv_o, countv_o))
   call io_check(nf90_put_var(ncid_save, varid_o(2), py, startv_o, countv_o))
@@ -292,7 +298,7 @@ subroutine p_save(grid_y, nx, ny, nz, Lx, Ly, Lz, &
   call io_check(nf90_put_var(ncid_save, varid_o(35), pdvdt, startv_o, countv_o))
   call io_check(nf90_put_var(ncid_save, varid_o(36), pdwdt, startv_o, countv_o))
 
-  call io_check(nf90_put_var(ncid_save, varid_o(37), time, (/startv_o(2)/)))
+  call io_check(nf90_put_var(ncid_save, varid_o(37), time, (/startv_o(3)/)))
 
   ! if (itsave == nt_saved) then
   !   call io_check(nf90_close(ncid_save))

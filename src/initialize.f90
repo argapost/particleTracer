@@ -41,6 +41,44 @@ subroutine p_initialize(npx, npy, npz, Lx, Ly, Lz, px, py, pz, nprtcls)
 
 end subroutine p_initialize
 
+! Fibonacci Uniformly Distributed points on a sphere
+subroutine sphere_initialize(sx, sy, sz, nprtcls)
+
+  integer :: nsamples
+  integer :: i, j
+  real(4), parameter :: pi = 3.1415925
+  real(4) :: phi, theta, radius, x, y, z
+  real(4) :: sx(nprtcls), sy(nprtcls), sz(nprtcls)
+
+  phi = pi*(3.0 - sqrt(5.0)) ! golden angle in radius
+
+  j = 1
+  do i = 0, nprtcls - 1
+
+    y = 1.0 - (i/real(nprtcls - 1.0))*2.0
+    radius = sqrt(1.0 - y*y)
+
+    theta = phi*i
+
+    x = cos(theta)*radius
+    z = sin(theta)*radius
+
+    if (y > 0.0) then
+      sx(j) = x
+      sy(j) = y
+      sz(j) = z
+
+      sx(j + 1) = -x
+      sy(j + 1) = -y
+      sz(j + 1) = -z
+
+      j = j + 2
+    end if
+
+  end do
+
+end subroutine sphere_initialize
+
 subroutine meshgrid(x, y, Xm, Ym, nx, ny)
   real, intent(in) :: x(nx), y(ny)
   real, intent(out) :: Xm(ny, nx), Ym(ny, nx)
